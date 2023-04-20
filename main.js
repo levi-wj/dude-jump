@@ -7,15 +7,33 @@ let score = {
     oldNum: 0,
     init: function() {
         this.counter = document.getElementById('score');
+        this.hiScoreEle = document.getElementById('hiscore');
+        this.hiScore = localStorage.getItem('hiScore') ?? 0;
+        this.updateHighScoreEle();
     },
     updateScore: function (score) {
         this.oldNum = this.num;
         this.num = score;
     },
-    updateEle: function () {
+    updateHighScore: function () {
+        if (this.num > this.hiScore) {
+            this.hiScore = this.num;
+            localStorage.setItem('hiScore', this.hiScore);
+            this.updateHighScoreEle();
+        }
+    },
+    updateScoreEle: function () {
         if (this.num !== this.oldNum) {
             this.counter.innerText = 'Score: ' + this.num;
         }
+    },
+    updateHighScoreEle: function () {
+        this.hiScoreEle.innerText = 'High Score: ' + this.hiScore;
+    },
+    resetHighScore: function () {
+        this.hiScore = 0;
+        localStorage.setItem('hiScore', this.hiScore);
+        this.updateHighScoreEle();
     }
 }
 
@@ -26,12 +44,31 @@ let area = {
         this.canvas.width = this.size.w;
         this.canvas.height = this.size.h;
         this.ctx = this.canvas.getContext('2d');
+    },
+    clear: function () {
+        this.ctx.reset();
         this.ctx.imageSmoothingEnabled = false;
-        this.ctx.font = '48px serif';
-        this.ctx.fillStyle = "black";
     },
     centerObjH: function (w) {
         return (area.size.w / 2) - (w / 2);
+    },
+    drawMsgBanner: function (title, subtitle) {
+        // Background box
+        this.ctx.rect(0, (area.size.h / 2) - 100 / 2, area.size.w, 100);
+        this.ctx.fillStyle = '#e8f9ff';
+        this.ctx.fill();
+
+        // Title
+        this.ctx.fillStyle = 'black';
+        this.ctx.textAlign = "center";
+        this.ctx.font = '25px monospace';
+        this.ctx.fillText(title, (area.size.w / 2), (area.size.h / 2) - (subtitle ? 2 : -5));
+
+        // Subtitle
+        if (subtitle) {
+            this.ctx.font = '15px monospace';
+            this.ctx.fillText(subtitle, (area.size.w / 2), (area.size.h / 2) + 18);
+        }
     },
     intersectRects: function (r1pos, r1size, r2pos, r2size) {
         return (
@@ -106,7 +143,7 @@ let platforms = {
     init: function () {
         this.sprite.src = 'img/platform.png';
 
-        // Create first two platforms 
+        // Create first two platforms
         this.createPlatform(area.centerObjH(this.size.w), 50);
         this.createPlatform(area.centerObjH(this.size.w), 50 + this.gap);
 
@@ -156,19 +193,21 @@ function startGame() {
         // Check if the player fell offscreen
         if (camera.getDrawnPos(player).y > area.size.h) {
             window.clearInterval(gameLoop);
-            // area.ctx.fillText('Game over!', area.size.w / 2, area.size.h / 2);
-            area.ctx.fillText('Game over!', 50, 50);
+            score.updateHighScore();
+            setTimeout(() => {
+                area.drawMsgBanner('Game over!', 'Reload to play again');
+            }, 200);
         }
 
         score.updateScore(Math.floor(frame / 20));
-        score.updateEle();
+        score.updateScoreEle();
         drawFrame();
         frame++;
     }, 20);
 };
 
 function drawFrame() {
-    area.ctx.reset();
+    area.clear();
     camera.draw(player);
     platforms.drawPlatforms();
 }
@@ -203,5 +242,8 @@ window.addEventListener('load', () => {
     platforms.init();
     score.init();
 
-    setTimeout(drawFrame, 100);
+    setTimeout(() => {
+        drawFrame();
+        area.drawMsgBanner('Press any key to start');
+    }, 100);
 });

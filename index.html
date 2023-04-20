@@ -8,7 +8,7 @@
     <title>Dude Jump</title>
     <style>
         body {
-            background-color: rgb(232 249 255);
+            background-color: #e8f9ff;
             margin: 0;
         }
         main {
@@ -16,11 +16,13 @@
             margin: 0 auto;
             text-align: center;
         }
-        #score {
-            text-align: right;
-            margin-bottom: 1em;
+        .header {
+            display: flex;
+            justify-content: space-between;
             font-size: large;
-            font-family: fantasy, sans-serif;
+            font-family: monospace;
+            margin-top: 1em;
+            margin-bottom: 1em;
             color: #5c5c5c;
         }
         #game {
@@ -32,7 +34,10 @@
 </head>
 <body>
     <main>
-        <p id="score">Score: 0</p>
+        <div class="header">
+            <span id="hiscore">High Score: 0</span>
+            <span id="score">Score: 0</span>
+        </div>
         <canvas id="game"></canvas>
     </main>
 </body>
