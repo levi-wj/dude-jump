@@ -20,6 +20,9 @@ let score = {
             this.hiScore = this.num;
             localStorage.setItem('hiScore', this.hiScore);
             this.updateHighScoreEle();
+            return true;
+        } else {
+            return false;
         }
     },
     updateScoreEle: function () {
@@ -115,7 +118,8 @@ let player = {
     doPhysics: function () {
         this.velocity.y -= g * this.fallMultiplier;
 
-        if (this.velocity.y <= 0) {
+        // If we're falling and the player isn't too high off the screen, check for bounce
+        if (this.velocity.y <= 0 && camera.getDrawnPos(this).y > -5) {
             // Check collision
             platforms.objs.every(platform => {
                 if (area.intersectRects(player.position, player.size, platform.position, platform.size)) {
@@ -137,8 +141,9 @@ let player = {
 let platforms = {
     sprite: new Image(),
     size: { w: 60, h: 15 },
-    gap: 125,
-    curHeight: 150,
+    gap: 150,
+    padding: 100,
+    curHeight: 200,
     objs: [],
     init: function () {
         this.sprite.src = 'img/platform.png';
@@ -147,9 +152,13 @@ let platforms = {
         this.createPlatform(area.centerObjH(this.size.w), 50);
         this.createPlatform(area.centerObjH(this.size.w), 50 + this.gap);
 
+        // Create more platforms at random positions
         for (this.curHeight = 50 + (this.gap * 2); this.curHeight <= (area.size.h + 50 + (this.gap * 2)); this.curHeight += this.gap) {
-            this.createPlatform(Math.floor(Math.random() * area.size.w), this.curHeight);
+            this.createPlatform(this.getRandomX(), this.curHeight);
         }
+    },
+    getRandomX: function () {
+        return Math.floor(Math.random() * (area.size.w - this.padding)) + (this.padding / 2);
     },
     createPlatform: function(x, y) {
         this.objs.push({
@@ -163,9 +172,10 @@ let platforms = {
     },
     deleteOffscreen: function () {
         for (let i = 0; i < this.objs.length; i++) {
+            // If the platform is too far down, delete it and create a new one
             if (camera.getDrawnPos(this.objs[i]).y > area.size.h + this.objs[i].size.h) {
                 this.objs.shift();
-                this.createPlatform(Math.floor(Math.random() * area.size.w), this.curHeight);
+                this.createPlatform(this.getRandomX(), this.curHeight);
                 this.curHeight += this.gap;
             } else {
                 // They're in order of height, we know there are no more
@@ -176,6 +186,8 @@ let platforms = {
 }
 
 function startGame() {
+    let gameOverMsg = 'Game over!';
+
     // Main game loop!
     const gameLoop = window.setInterval(() => {
         player.doPhysics();
@@ -186,6 +198,7 @@ function startGame() {
 
         // Game difficulty increase
         camera.moveSpeed += .005;
+        platforms.gap += .03;
         player.moveSpeed += .005;
         player.jumpVelocity += .01;
         player.fallMultiplier += .0004;
@@ -193,9 +206,11 @@ function startGame() {
         // Check if the player fell offscreen
         if (camera.getDrawnPos(player).y > area.size.h) {
             window.clearInterval(gameLoop);
-            score.updateHighScore();
+            if (score.updateHighScore()) {
+                gameOverMsg = 'New high score!!';
+            }
             setTimeout(() => {
-                area.drawMsgBanner('Game over!', 'Reload to play again');
+                area.drawMsgBanner(gameOverMsg, 'Reload to play again');
             }, 200);
         }
 
